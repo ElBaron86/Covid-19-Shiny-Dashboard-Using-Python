@@ -37,7 +37,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
     # Main message
     f"Review of data on the situation in hospitals during the COVID-19 pandemic in France." 
 
-# TODO: Add a reactive sidebar and test reactivity with the valueboxes
+    # Sidebar
     ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2020, step=1)
 
     @reactive.calc
@@ -91,7 +91,6 @@ with ui.nav_panel(title="Hospital Situation", # Title
                 int(data_p1_filtered()['dc_tot'].max())
 
 
-
 # ------------------------------------------------- #
 ######## Vaccination Situation Panel ########
 # ------------------------------------------------- #
@@ -105,6 +104,14 @@ with ui.nav_panel(title="Vaccination Situation", # Title
 # TODO: Add a reactive sidebar. Maybe il will change the data
     # to take "data/vacsi-v-fra.csv" as input and plot a ipyleaflet Map
 
+    # Sidebar
+    ui.input_slider(id="year_slider_p2", label="Year", min=2020, max=2023, value=2020, step=1)
+
+    @reactive.calc
+    def data_p2_filtered():
+        year = input.year_slider_p2()
+        return data_p2[data_p2['year'] == year]
+
     # Valueboxes Container
     with ui.layout_columns(fill=False):
 
@@ -114,7 +121,7 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             "One dose received"
             @render.express
             def total_dose1():
-                int(data_p2[data_p2['year'] == 2020]['n_dose1'].sum())
+                int(data_p2_filtered()['n_dose1'].sum())
 
         # Total 2nd doses valuebox
         with ui.value_box(showcase=icons("syringe"),
@@ -122,7 +129,7 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             "Two doses received"
             @render.express
             def total_dose2():
-                int(data_p2[data_p2['year'] == 2020]['n_dose2'].sum())
+                int(data_p2_filtered()['n_dose2'].sum())
 
         # Total 3 doses valuebox
         with ui.value_box(showcase=icons("syringe"),
@@ -130,7 +137,7 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             "Three doses received"
             @render.express
             def total_dose3():
-                int(data_p2[data_p2['year'] == 2020]['n_dose3'].sum())
+                int(data_p2_filtered()['n_dose3'].sum())
 
         # Total 4 doses valuebox
         with ui.value_box(showcase=icons("syringe"),
@@ -138,7 +145,7 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             "Four doses received"
             @render.express
             def total_dose4():
-                int(data_p2[data_p2['year'] == 2020]['n_dose4'].sum())
+                int(data_p2_filtered()['n_dose4'].sum())
 
 
                 
