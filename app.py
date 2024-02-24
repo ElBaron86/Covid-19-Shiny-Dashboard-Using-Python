@@ -9,14 +9,21 @@ from shiny import reactive, render, req
 from shiny.ui import page_navbar
 from faicons import icon_svg as icons
 
-# Loading data
-data_p1 = pd.read_csv("data\indicateur-suivi.csv")
+# Loading and configuring data
+# hospitalisations data
+data_p1 = pd.read_csv("data/indicateur-suivi.csv")
 data_p1["date"] = pd.to_datetime(data_p1["date"])
 data_p1["year"] = data_p1["date"].dt.year
 
-# Adding page title and sidebar
+# vaccination data
+data_p2 = pd.read_csv("data/vacsi-v-fra.csv", sep=";")
+data_p2["jour"] = pd.to_datetime(data_p2["jour"])
+data_p2["year"] = data_p2["jour"].dt.year
+
+# Adding page title 
 ui.page_opts(
-    title="COVID 19 Exploration",
+    title="COVID 19 Dashoard - France",
+    # Adding a navbar to the page
     page_fn=partial(page_navbar, id="page_vavbar", fillable=True, bg="light"),
 )
 
@@ -27,14 +34,14 @@ ui.page_opts(
 #                     min=data_p1["year"].min(), max=data_p1["year"].max(), value=data_p1["year"].min())
 
 # ------------------------------------------------- #
-# Hopsital Situation Panel
+######## Hopsital Situation Panel ########
 # ------------------------------------------------- #
 
 with ui.nav_panel(title="Hospital Situation", # Title
                     icon=icons("hospital"), # Icon
                     ):
     # Main message
-    f"Revue des donnes sur la situation dans les hopitaux durant la pandemie de COVID-19 en France." 
+    f"Review of data on the situation in hospitals during the COVID-19 pandemic in France." 
 
 
 #    with ui.sidebar(open="desktop"):
@@ -51,7 +58,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total Positive Cases"
             @render.express
             def total_pos():
-                data_p1[data_p1['year'] == 2020]['pos'].sum()
+                int(data_p1[data_p1['year'] == 2020]['pos'].sum())
 
         # Total hospitalisations valuebox
         with ui.value_box(showcase=icons("truck-medical"),
@@ -59,67 +66,92 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total Hospitalisations"
             @render.express
             def total_hosp():
-                data_p1[data_p1['year'] == 2020]['pos'].sum() ######
+                int(data_p1[data_p1['year'] == 2020]['pos'].sum())
 
         # Total reanimations valuebox
-        with ui.value_box(showcase=icons("bed"),
+        with ui.value_box(showcase=icons("bed-pulse"),
                             theme="bg-gradient-orange-cyan"):
             "Total In Reanimation"
             @render.express
             def total_rea():
-                data_p1[data_p1['year'] == 2020]['rea'].sum() ######
+                int(data_p1[data_p1['year'] == 2020]['rea'].sum())
 
         # Total deaths valuebox
         # TODO: Set background color to gray and text color to white
+        with ui.value_box(showcase=icons("house-user"),
+                            theme="bg-gradient-green-blue"):
+            "Total Home Returns"
+            @render.express
+            def total_returns():
+                int(data_p1[data_p1['year'] == 2020]['rad'].max())
+
+        # Total returns home valuebox
         with ui.value_box(showcase=icons("skull"),
                             theme="bg-gradient-black"):
             "Total Deaths"
             @render.express
             def total_deaths():
-                data_p1[data_p1['year'] == 2021]['dc_tot'].max()
+                int(data_p1[data_p1['year'] == 2020]['dc_tot'].max())
 
-    # Plots Container
-# #
-#    with ui.layout_columns(fill=False):
-    #Hospialisations & reanimations & Home returns & Deaths
-        
-#        @render_plotly
-#        def plot_hosp():
-#            data = data_p1[data_p1['year'] == 2020]
-#            fig_hosp = data.plot(x='date', y=['incid_hosp'], kind='line')
-            
-            # Converting the Axes object to a Plotly object
-#            fig_hosp = go.Figure(fig_hosp)
 
-#            return fig_hosp
-        
 
 # ------------------------------------------------- #
-# Reactivity
+######## Vaccination Situation Panel ########
 # ------------------------------------------------- #
-        
-#@reactive.calc
-#def total_pos():
-#    data_p1[data_p1['year'] == 2020]['pos'].sum()
+
+with ui.nav_panel(title="Vaccination Situation", # Title
+                    icon=icons("syringe"),
+                    ):
+    # Main message
+    f"Review of data on the overall vaccination situation" 
+
+    # Valueboxes Container
+    with ui.layout_columns(fill=False):
+
+        # Total 1st dose valuebox
+        with ui.value_box(showcase=icons("syringe"),
+                            theme="bg-gradient-yellow-green"):
+            "One dose received"
+            @render.express
+            def total_dose1():
+                int(data_p2[data_p2['year'] == 2020]['n_dose1'].sum())
+
+        # Total 2nd doses valuebox
+        with ui.value_box(showcase=icons("syringe"),
+                            theme="bg-gradient-green-orange"):
+            "Two doses received"
+            @render.express
+            def total_dose2():
+                int(data_p2[data_p2['year'] == 2020]['n_dose2'].sum())
+
+        # Total 3 doses valuebox
+        with ui.value_box(showcase=icons("syringe"),
+                            theme="bg-gradient-green-purple"):
+            "Three doses received"
+            @render.express
+            def total_dose3():
+                int(data_p2[data_p2['year'] == 2020]['n_dose3'].sum())
+
+        # Total 4 doses valuebox
+        with ui.value_box(showcase=icons("syringe"),
+                            theme="bg-gradient-purple-green"):
+            "Four doses received"
+            @render.express
+            def total_dose4():
+                int(data_p2[data_p2['year'] == 2020]['n_dose4'].sum())
+
+
+
+
+
+####detailed vaccination situation
                 
+# ------------------------------------------------- #
+######## Detailed Vaccination Situation Panel ########
+# ------------------------------------------------- #
 
-
-
-
-
-
-## Vaccination Situation Panel ##
-#with ui.nav_panel(title="Vaccination Situation",
-#                    icon=icons("syringe"),
-#                    ):
-#    "Revue des donnees sur la vaccination contre le COVID-19 en France."
-        
-
-        def plot_hosp():
-            data = data_p1[data_p1['year'] == 2020]
-            fig_hosp = data.plot(x='date', y=['incid_hosp', 'incid_rea', 'incid_rad', 'dchosp'], kind='line')
-            
-            # Convertir l'objet Axes en un objet Plotly
-            fig_hosp = go.Figure(fig_hosp)
-            
-            return fig_hosp
+with ui.nav_panel(title="Detailed Vaccination", # Title
+                    icon=icons("restroom"),
+                    ):
+    # Main message
+    f"Review of data on the specific vaccination situation" 
