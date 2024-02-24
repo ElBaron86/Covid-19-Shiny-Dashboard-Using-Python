@@ -112,7 +112,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             sns.lineplot(x=data['month'], y=data['hosp'], label="new hospitalizations", markers=True, marker="p", color="red")
             sns.lineplot(x=data['month'], y=data['rea'], label="in reanimations", markers=True, marker="4", color = "orange")
             sns.lineplot(x=data['month'], y=data['rad'], label="returning home", markers=True, marker="P", color="green")
-            sns.lineplot(x=data['month'], y=data['dchosp'], label="died in hospital", markers=True, marker=".", color="black")
+            sns.lineplot(x=data['month'], y=data['dchosp'], label="died in hospital", markers=True, marker=".", color="dimgray")
             plt.title(f"Situation in hospitals in {year}", fontsize=20, color="white")
             mplcyberpunk.add_underglow()
             mplcyberpunk.make_lines_glow(alpha_line=0.4)
