@@ -67,7 +67,6 @@ with ui.nav_panel(title="Hospital Situation", # Title
                 int(data_p1[data_p1['year'] == 2020]['rea'].sum())
 
         # Total deaths valuebox
-        # TODO: Set background color to gray and text color to white
         with ui.value_box(showcase=icons("house-user"),
                             theme="bg-gradient-green-blue"):
             "Total Home Returns"
@@ -134,10 +133,6 @@ with ui.nav_panel(title="Vaccination Situation", # Title
                 int(data_p2[data_p2['year'] == 2020]['n_dose4'].sum())
 
 
-
-
-
-####detailed vaccination situation
                 
 # ------------------------------------------------- #
 ######## Detailed Vaccination Situation Panel ########
