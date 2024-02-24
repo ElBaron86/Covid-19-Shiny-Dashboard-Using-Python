@@ -14,6 +14,7 @@ from faicons import icon_svg as icons
 data_p1 = pd.read_csv("data/indicateur-suivi.csv")
 data_p1["date"] = pd.to_datetime(data_p1["date"])
 data_p1["year"] = data_p1["date"].dt.year
+data_p1["month"] = data_p1["date"].dt.month_name()
 
 # vaccination data
 data_p2 = pd.read_csv("data/vacsi-v-fra.csv", sep=";")
@@ -61,7 +62,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
         # Total hospitalisations valuebox
         with ui.value_box(showcase=icons("truck-medical"),
                             theme="bg-gradient-red-purple"):
-            "Total Hospitalisations"
+            "Total Hospitalizations"
             @render.express
             def total_hosp():
                 int(data_p1_filtered()['hosp'].sum())
@@ -89,6 +90,40 @@ with ui.nav_panel(title="Hospital Situation", # Title
             @render.express
             def total_deaths():
                 int(data_p1_filtered()['dc_tot'].max())
+
+    # Hospitalisation lineplot with plotly
+    with ui.layout_columns(fill=False):
+
+        @render.plot
+        def plot_hospitalisations():
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            import mplcyberpunk
+            plt.style.use("seaborn-v0_8")
+
+            year = input.year_slider_p1()
+            data = data_p1.groupby(['year', 'month']).agg({'hosp': 'sum',
+                                                            'rea': 'sum',
+                                                            'rad' : 'sum',
+                                                            'dchosp' : 'sum'}).reset_index()
+            data = data_p1[data_p1['year'] == year]
+            
+            fig = plt.figure(dpi=100)
+            sns.lineplot(x=data['month'], y=data['hosp'], label="new hospitalizations", markers=True, marker="p", color="red")
+            sns.lineplot(x=data['month'], y=data['rea'], label="in reanimations", markers=True, marker="4", color = "orange")
+            sns.lineplot(x=data['month'], y=data['rad'], label="returning home", markers=True, marker="P", color="green")
+            sns.lineplot(x=data['month'], y=data['dchosp'], label="died in hospital", markers=True, marker=".", color="black")
+            plt.title(f"Situation in hospitals in {year}", fontsize=20, color="white")
+            mplcyberpunk.add_underglow()
+            mplcyberpunk.make_lines_glow(alpha_line=0.4)
+            mplcyberpunk.add_gradient_fill(alpha_gradientglow=0.6)
+            plt.ylabel("Number of people")
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+
+            return fig
+
+
 
 
 # ------------------------------------------------- #
@@ -146,6 +181,10 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             @render.express
             def total_dose4():
                 int(data_p2_filtered()['n_dose4'].sum())
+
+
+        # Plot
+        
 
 
                 
