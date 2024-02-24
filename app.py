@@ -38,6 +38,14 @@ with ui.nav_panel(title="Hospital Situation", # Title
     f"Review of data on the situation in hospitals during the COVID-19 pandemic in France." 
 
 # TODO: Add a reactive sidebar and test reactivity with the valueboxes
+    ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2020, step=1)
+
+    @reactive.calc
+    def data_p1_filtered():
+        year = input.year_slider_p1()
+        return data_p1[data_p1['year'] == year]
+    
+
 
     # Valueboxes Container
     with ui.layout_columns(fill=False):
@@ -48,7 +56,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total Positive Cases"
             @render.express
             def total_pos():
-                int(data_p1[data_p1['year'] == 2020]['pos'].sum())
+                int(data_p1_filtered()['pos'].sum())
 
         # Total hospitalisations valuebox
         with ui.value_box(showcase=icons("truck-medical"),
@@ -56,7 +64,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total Hospitalisations"
             @render.express
             def total_hosp():
-                int(data_p1[data_p1['year'] == 2020]['pos'].sum())
+                int(data_p1_filtered()['hosp'].sum())
 
         # Total reanimations valuebox
         with ui.value_box(showcase=icons("bed-pulse"),
@@ -64,7 +72,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total In Reanimation"
             @render.express
             def total_rea():
-                int(data_p1[data_p1['year'] == 2020]['rea'].sum())
+                int(data_p1_filtered()['rea'].sum())
 
         # Total deaths valuebox
         with ui.value_box(showcase=icons("house-user"),
@@ -72,7 +80,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total Home Returns"
             @render.express
             def total_returns():
-                int(data_p1[data_p1['year'] == 2020]['rad'].max())
+                int(data_p1_filtered()['rad'].max())
 
         # Total returns home valuebox
         with ui.value_box(showcase=icons("skull"),
@@ -80,7 +88,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total Deaths"
             @render.express
             def total_deaths():
-                int(data_p1[data_p1['year'] == 2020]['dc_tot'].max())
+                int(data_p1_filtered()['dc_tot'].max())
 
 
 
