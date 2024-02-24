@@ -41,6 +41,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
     # Sidebar
     ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2020, step=1)
 
+    # Reactive data filtering
     @reactive.calc
     def data_p1_filtered():
         year = input.year_slider_p1()

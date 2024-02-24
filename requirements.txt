@@ -1,0 +1,9 @@
+matplotlib
+pandas
+seaborn
+mplcyberpunk
+plotly
+plotly_express
+shiny
+shinywidgets
+faicons
