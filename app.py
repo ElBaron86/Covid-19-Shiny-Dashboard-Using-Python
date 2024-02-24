@@ -27,12 +27,6 @@ ui.page_opts(
     page_fn=partial(page_navbar, id="page_vavbar", fillable=True, bg="light"),
 )
 
-# TODO: Add a reactive sidebar to select the year
-# Commenting out the code block
-# with ui.sidebar(open="desktop"):
-#     ui.input_slider(id="year_selector", label="Year",
-#                     min=data_p1["year"].min(), max=data_p1["year"].max(), value=data_p1["year"].min())
-
 # ------------------------------------------------- #
 ######## Hopsital Situation Panel ########
 # ------------------------------------------------- #
@@ -43,11 +37,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
     # Main message
     f"Review of data on the situation in hospitals during the COVID-19 pandemic in France." 
 
-
-#    with ui.sidebar(open="desktop"):
-#            ui.input_slider(id="year_selector", label="Year",
-#                            min=data_p1["year"].min(), max=data_p1["year"].max(), value=data_p1["year"].min())
-
+# TODO: Add a reactive sidebar and test reactivity with the valueboxes
 
     # Valueboxes Container
     with ui.layout_columns(fill=False):
@@ -105,6 +95,9 @@ with ui.nav_panel(title="Vaccination Situation", # Title
     # Main message
     f"Review of data on the overall vaccination situation" 
 
+# TODO: Add a reactive sidebar. Maybe il will change the data
+    # to take "data/vacsi-v-fra.csv" as input and plot a ipyleaflet Map
+
     # Valueboxes Container
     with ui.layout_columns(fill=False):
 
@@ -155,3 +148,5 @@ with ui.nav_panel(title="Detailed Vaccination", # Title
                     ):
     # Main message
     f"Review of data on the specific vaccination situation" 
+
+# TODO: Add a reactive sidebar, a sex checkbox and a age range slider. May be the most reactive part of the app
