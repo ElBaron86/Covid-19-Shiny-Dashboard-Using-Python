@@ -54,7 +54,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
         # Total positive cases valuebox
         with ui.value_box(showcase=icons("virus-covid"),
                             theme="bg-gradient-yellow-orange"):
-            "Total Positive Cases"
+            "Total Positive Cases" # Box title
             @render.express
             def total_pos():
                 int(data_p1_filtered()['pos'].sum())
@@ -78,7 +78,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
         # Total deaths valuebox
         with ui.value_box(showcase=icons("house-user"),
                             theme="bg-gradient-green-blue"):
-            "Total Home Returns"
+            "Total Returning Home"
             @render.express
             def total_returns():
                 int(data_p1_filtered()['rad'].max())
@@ -86,21 +86,23 @@ with ui.nav_panel(title="Hospital Situation", # Title
         # Total returns home valuebox
         with ui.value_box(showcase=icons("skull"),
                             theme="bg-gradient-black"):
-            "Total Deaths"
+            "Total Deaths" 
             @render.express
             def total_deaths():
                 int(data_p1_filtered()['dc_tot'].max())
 
-    # Hospitalisation lineplot with plotly
+    # Hospitalisation plot with matplotlib & seaborn tuned with mplcyberpunk
     with ui.layout_columns(fill=False):
 
         @render.plot
         def plot_hospitalisations():
+            # Importing modules
             import matplotlib.pyplot as plt
             import seaborn as sns
             import mplcyberpunk
             plt.style.use("seaborn-v0_8")
 
+            # Gouping data to unify the plot
             year = input.year_slider_p1()
             data = data_p1.groupby(['year', 'month']).agg({'hosp': 'sum',
                                                             'rea': 'sum',
@@ -108,15 +110,18 @@ with ui.nav_panel(title="Hospital Situation", # Title
                                                             'dchosp' : 'sum'}).reset_index()
             data = data_p1[data_p1['year'] == year]
             
+            # defining the plot
             fig = plt.figure(dpi=100)
             sns.lineplot(x=data['month'], y=data['hosp'], label="new hospitalizations", markers=True, marker="p", color="red")
             sns.lineplot(x=data['month'], y=data['rea'], label="in reanimations", markers=True, marker="4", color = "orange")
-            sns.lineplot(x=data['month'], y=data['rad'], label="returning home", markers=True, marker="P", color="green")
+            sns.lineplot(x=data['month'], y=data['rad'], label="returned home", markers=True, marker="P", color="green")
             sns.lineplot(x=data['month'], y=data['dchosp'], label="died in hospital", markers=True, marker=".", color="dimgray")
-            plt.title(f"Situation in hospitals in {year}", fontsize=20, color="white")
+            plt.title(f"Situation in hospitals in {year}", fontsize=13, fontweight="semibold")
+            # Adding the cyberpunk style
             mplcyberpunk.add_underglow()
             mplcyberpunk.make_lines_glow(alpha_line=0.4)
             mplcyberpunk.add_gradient_fill(alpha_gradientglow=0.6)
+            # Axis properties
             plt.ylabel("Number of people")
             plt.xticks(rotation=45)
             plt.tight_layout()
@@ -183,8 +188,10 @@ with ui.nav_panel(title="Vaccination Situation", # Title
                 int(data_p2_filtered()['n_dose4'].sum())
 
 
-        # Plot
-        
+
+# ------------------------------------------------- #
+######## Detailed Hospitalizations Panel ########
+# ------------------------------------------------- #  
 
 
                 
