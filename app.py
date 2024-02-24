@@ -36,7 +36,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
                     icon=icons("hospital"), # Icon
                     ):
     # Main message
-    f"Review of data on the situation in hospitals during the COVID-19 pandemic in France." 
+    f"Review of data on the situation in hospitals during the COVID-19 pandemic in France. This data comes from the data.gouv.fr website" 
 
     # Sidebar
     ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2020, step=1)
@@ -53,7 +53,8 @@ with ui.nav_panel(title="Hospital Situation", # Title
 
         # Total positive cases valuebox
         with ui.value_box(showcase=icons("virus-covid"),
-                            theme="bg-gradient-yellow-orange"):
+                            theme="bg-gradient-yellow-orange",
+                            max_height="160px"):
             "Total Positive Cases" # Box title
             @render.express
             def total_pos():
@@ -61,7 +62,8 @@ with ui.nav_panel(title="Hospital Situation", # Title
 
         # Total hospitalisations valuebox
         with ui.value_box(showcase=icons("truck-medical"),
-                            theme="bg-gradient-red-purple"):
+                            theme="bg-gradient-red-purple",
+                            max_height="160px"):
             "Total Hospitalizations"
             @render.express
             def total_hosp():
@@ -69,7 +71,8 @@ with ui.nav_panel(title="Hospital Situation", # Title
 
         # Total reanimations valuebox
         with ui.value_box(showcase=icons("bed-pulse"),
-                            theme="bg-gradient-orange-cyan"):
+                            theme="bg-gradient-orange-cyan",
+                            max_height="160px"):
             "Total In Reanimation"
             @render.express
             def total_rea():
@@ -77,7 +80,8 @@ with ui.nav_panel(title="Hospital Situation", # Title
 
         # Total deaths valuebox
         with ui.value_box(showcase=icons("house-user"),
-                            theme="bg-gradient-green-blue"):
+                            theme="bg-gradient-green-blue",
+                            max_height="160px"):
             "Total Returning Home"
             @render.express
             def total_returns():
@@ -85,14 +89,22 @@ with ui.nav_panel(title="Hospital Situation", # Title
 
         # Total returns home valuebox
         with ui.value_box(showcase=icons("skull"),
-                            theme="bg-gradient-black"):
+                            theme="bg-gradient-black",
+                            max_height="160px"):
             "Total Deaths" 
             @render.express
             def total_deaths():
                 int(data_p1_filtered()['dc_tot'].max())
 
-    # Hospitalisation plot with matplotlib & seaborn tuned with mplcyberpunk
+# Information mesa before the plot
     with ui.layout_columns(fill=False):
+        @render.text
+        def text_hospitalisations():
+            year = input.year_slider_p1()
+            text = f"The following graph shows the evolution of hospital observations during the pandemic in {year}. This data has been aggregated by month for the year {year}"
+            return text
+    # Hospitalisation plot with matplotlib & seaborn tuned with mplcyberpunk
+    with ui.layout_columns(fill=False):            
 
         @render.plot
         def plot_hospitalisations():
@@ -127,6 +139,11 @@ with ui.nav_panel(title="Hospital Situation", # Title
             plt.tight_layout()
 
             return fig
+        
+
+
+
+
 
 
 
