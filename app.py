@@ -104,7 +104,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
 
 # Card containing the information about the hospitalisations graph
     with ui.card(max_height="50px"):
-        ui.markdown("The following graph shows the evolution of hospital observations during the pandemic. This data has been aggregated by month. SMSES stands for 'Social or medico-social establishment or service'")
+        ui.markdown("The following graph shows the evolution of hospital observations during the pandemic. This data has been aggregated by month for the Situations plot and by year for the pie chart. SMSES stands for 'Social or medico-social establishment or service'.")
 
     # Hospitalisation plot with matplotlib & seaborn tuned with mplcyberpunk
     with ui.layout_columns(fill=False):
