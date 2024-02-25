@@ -1,6 +1,8 @@
 # Importing modules
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+import mplcyberpunk
 import plotly.graph_objects as go
 from functools import partial
 from shiny.express import ui, input
@@ -36,7 +38,10 @@ with ui.nav_panel(title="Hospital Situation", # Title
                     icon=icons("hospital"), # Icon
                     ):
     # Main message
-    f"Review of data on the situation in hospitals during the COVID-19 pandemic in France. This data comes from the data.gouv.fr website" 
+    with ui.card(max_height="50px"):
+
+        # Card containing the main message
+        ui.markdown("Review of data on the situation in hospitals during the COVID-19 pandemic in France. This data comes from the data.gouv.fr website")
 
     # Sidebar
     ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2020, step=1)
@@ -97,22 +102,41 @@ with ui.nav_panel(title="Hospital Situation", # Title
             def total_deaths():
                 int(data_p1_filtered()['dc_tot'].max())
 
-# Information mesa before the plot
-    with ui.layout_columns(fill=False):
-        @render.text
-        def text_hospitalisations():
-            year = input.year_slider_p1()
-            text = f"The following graph shows the evolution of hospital observations during the pandemic in {year}. This data has been aggregated by month for the year {year}"
-            return text
+# Card containing the information about the hospitalisations graph
+    with ui.card(max_height="50px"):
+        ui.markdown("The following graph shows the evolution of hospital observations during the pandemic. This data has been aggregated by month. SMSES stands for 'Social or medico-social establishment or service'")
+
     # Hospitalisation plot with matplotlib & seaborn tuned with mplcyberpunk
-    with ui.layout_columns(fill=False):            
+    with ui.layout_columns(fill=False):
+
+        # Pie chart od deaths
+        @render.plot
+        def plot_deaths_pie():
+            # Preparing data
+            year = input.year_slider_p1()
+            data = data_p1.groupby(['year']).agg({'dchosp': 'sum',
+                                                    'esms_dc' : 'sum'}).reset_index()
+            data = data_p1[data_p1['year'] == year]
+            deaths = data[['dchosp', 'esms_dc']].sum()
+
+            # Pie chart of deaths
+            pie_chart = plt.figure(dpi=100)
+            plt.title(f"Deaths in {year}", fontsize=13, fontweight="semibold")
+            # Labels and colors
+            labels = ['In Hospitals', 'In SMSES']
+            explode = (0, 0.1)
+            colors = ['dimgrey', 'gainsboro']
+            # customizing the pie chart
+            plt.pie(deaths, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+            plt.axis('equal')
+            plt.legend(loc='best')
+            plt.tight_layout()
+            
+            return pie_chart
 
         @render.plot
         def plot_hospitalisations():
-            # Importing modules
-            import matplotlib.pyplot as plt
-            import seaborn as sns
-            import mplcyberpunk
+
             plt.style.use("seaborn-v0_8")
 
             # Gouping data to unify the plot
