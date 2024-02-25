@@ -1,3 +1,4 @@
+wheel
 matplotlib
 pandas
 seaborn
@@ -5,5 +6,6 @@ mplcyberpunk
 plotly
 plotly_express
 shiny
+htmltools
 shinywidgets
 faicons
