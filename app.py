@@ -39,7 +39,6 @@ with ui.nav_panel(title="Hospital Situation", # Title
                     ):
     # Main message
     with ui.card(max_height="50px"):
-
         # Card containing the main message
         ui.markdown("Review of data on the situation in hospitals during the COVID-19 pandemic in France. This data comes from the data.gouv.fr website")
 
@@ -103,7 +102,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
                 int(data_p1_filtered()['dc_tot'].max())
 
 # Card containing the information about the hospitalisations graph
-    with ui.card(max_height="50px"):
+    with ui.card(max_height="100px"):
         ui.markdown("The following graph shows the evolution of hospital observations during the pandemic. This data has been aggregated by month for the Situations plot and by year for the pie chart. SMSES stands for 'Social or medico-social establishment or service'.")
 
     # Hospitalisation plot with matplotlib & seaborn tuned with mplcyberpunk
@@ -165,12 +164,6 @@ with ui.nav_panel(title="Hospital Situation", # Title
 
             return fig
         
-
-
-
-
-
-
 
 
 # ------------------------------------------------- #
