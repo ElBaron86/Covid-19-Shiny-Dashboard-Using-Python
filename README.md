@@ -48,11 +48,15 @@ This will open a browser window with the dashboard. You can also access it from 
 
 Here are some screenshots of the dashboard:
 
+![Hospitalisations](screenshots\hospitalisations.png)
+
 
 ## Sources
 
 I would like to thank the following sources for providing the data and the inspiration for this project:
 
+- [vaccinations](https://www.data.gouv.fr/fr/datasets/donnees-relatives-aux-personnes-vaccinees-contre-la-covid-19-1/)
 
-![Hospitalisations](screenshots\hospitalisations.png)
+- [indicateurs-suivi](https://www.data.gouv.fr/fr/datasets/synthese-des-indicateurs-de-suivi-de-lepidemie-covid-19/)
+
 

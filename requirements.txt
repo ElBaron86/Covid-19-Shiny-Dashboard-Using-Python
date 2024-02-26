@@ -5,6 +5,7 @@ seaborn
 mplcyberpunk
 plotly
 plotly_express
+nbformat
 shiny
 htmltools
 shinywidgets

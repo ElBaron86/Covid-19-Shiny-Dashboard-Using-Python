@@ -11,6 +11,9 @@ from shinywidgets import render_plotly, render_widget
 from shiny import reactive, render, req
 from shiny.ui import page_navbar
 from faicons import icon_svg as icons
+import json
+
+# TODO: Add a section to the bottom to display my name and the date of the last update of the dashboard
 
 # Loading and configuring data
 # hospitalisations data
@@ -20,9 +23,12 @@ data_p1["year"] = data_p1["date"].dt.year
 data_p1["month"] = data_p1["date"].dt.month_name()
 
 # vaccination data
-data_p2 = pd.read_csv("data/vacsi-v-fra.csv", sep=";")
+data_p2 = pd.read_csv("data/vacsi-v-reg-2023-07-13-15h51.csv", sep=";")
 data_p2["jour"] = pd.to_datetime(data_p2["jour"])
-data_p2["year"] = data_p2["jour"].dt.year
+data_p2['jour'] = data_p2['jour'].dt.date
+
+## Geojson data
+regions = json.load(open("data/regions.geojson", "r"))
 
 # Adding page title 
 ui.page_opts(
@@ -36,12 +42,9 @@ ui.page_opts(
 # ------------------------------------------------- #
 
 with ui.nav_panel(title="Hospital Situation", # Title
-                    icon=icons("hospital"), # Icon
-                    ):
+                    icon=icons("hospital")):
     # Main message
-    with ui.card(max_height="50px"):
-        # Card containing the main message
-        ui.markdown("Review of data on the situation in hospitals during the COVID-19 pandemic in France. This data comes from the data.gouv.fr website")
+    ui.markdown("Review of data on the situation in hospitals during the COVID-19 pandemic in France. This data comes from the data.gouv.fr website")
 
     # Sidebar
     ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2020, step=1)
@@ -52,8 +55,6 @@ with ui.nav_panel(title="Hospital Situation", # Title
         year = input.year_slider_p1()
         return data_p1[data_p1['year'] == year]
     
-
-
     # Valueboxes Container
     with ui.layout_columns(fill=False):
 
@@ -103,14 +104,13 @@ with ui.nav_panel(title="Hospital Situation", # Title
                 int(data_p1_filtered()['dc_tot'].max())
 
 # Card containing the information about the hospitalisations graph
-    with ui.card(max_height="100px"):
-        ui.markdown("The following graph shows the evolution of hospital observations during the pandemic. This data has been aggregated by month for the Situations plot and by year for the pie chart. SMSES stands for 'Social or medico-social establishment or service'.")
+    ui.markdown("The following graph shows the evolution of hospital observations during the pandemic. This data has been aggregated by month for the Situations plot and by year for the pie chart. SMSES stands for 'Social or medico-social establishment or service'.")
 
     # Hospitalisation plot with matplotlib & seaborn tuned with mplcyberpunk
     with ui.layout_columns(fill=False):
 
+# TODO: Analyse the data or review the aggregation results
         # Pie chart od deaths
-        # TODO: Analyse the data or review the aggregation results
         @render_plotly
         def plot_deaths_pie():
             # Preparing data
@@ -127,7 +127,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
                                                     "Safe": "rgb(179, 179, 179)"})
             
             return pie_chart
-
+# TODO: change this plot to a plotly plot that look the same as the actual plot
         @render.plot
         def plot_hospitalisations():
 
@@ -168,22 +168,18 @@ with ui.nav_panel(title="Hospital Situation", # Title
 with ui.nav_panel(title="Vaccination Situation", # Title
                     icon=icons("syringe"),
                     ):
-    # Main message
-    f"Review of data on the overall vaccination situation" 
-
-# TODO: Add a reactive sidebar. Maybe il will change the data
-    # to take "data/vacsi-v-fra.csv" as input and plot a ipyleaflet Map
-
-    # Sidebar
-    ui.input_slider(id="year_slider_p2", label="Year", min=2020, max=2023, value=2020, step=1)
-
+    # Date range input
+    ui.input_date_range("date_range_p2", "Date Range", start="2020-12-27")
+    
+    # Reactive data filtering
     @reactive.calc
     def data_p2_filtered():
-        year = input.year_slider_p2()
-        return data_p2[data_p2['year'] == year]
+        return data_p2[(data_p2['jour'] >= input.date_range_p2()[0]) & (data_p2['jour'] <= input.date_range_p2()[1])].groupby(by=["reg", "jour"]).sum().reset_index()
 
     # Valueboxes Container
     with ui.layout_columns(fill=False):
+
+# TODO: Analye the data to verify the aggregation results. 
 
         # Total 1st dose valuebox
         with ui.value_box(showcase=icons("syringe"),
@@ -216,23 +212,39 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             @render.express
             def total_dose4():
                 int(data_p2_filtered()['n_dose4'].sum())
+    # Message nefore the map
+    ui.markdown("The following graph...")
 
+# TODO: Analye the data to verify the aggregation results. Add a barplot with plotly for gender.
+# The barplot will be placed between the radio buttons and the map
+    with ui.layout_columns(fill=False):
 
+        # Radio buttons for the type of vaccine
+        ui.input_radio_buttons(  
+            "radio_ndose","Number of doses",  
+            {"n_dose1": "1 dose", "n_dose2": "2 doses", "n_dose3": "3 doses", "n_dose4": "4 doses"},  
+            )  
 
-# ------------------------------------------------- #
-######## Detailed Hospitalizations Panel ########
-# ------------------------------------------------- #  
+        # Regions map of vaccination
+        @render_plotly
+        def regions_map():
+            
+            fig = px.choropleth_mapbox(data_p2_filtered(), geojson=regions, locations='reg', featureidkey="properties.code",
+                                        color=input.radio_ndose(), color_continuous_scale="Viridis",
+                                        range_color=(int(data_p2_filtered()[input.radio_ndose()].min()), int(data_p2_filtered()[input.radio_ndose()].max())),
+                                        mapbox_style="carto-positron",
+                                        zoom=4, center = {"lat": 46.18680055591775, "lon": 2.547157538666192},
+                                        opacity=0.5)
 
+            fig.update_layout(title=f"Vaccination by Region")
+            return fig
 
-                
 # ------------------------------------------------- #
 ######## Detailed Vaccination Situation Panel ########
 # ------------------------------------------------- #
-
+# TODO: Combine the data, add vaccines names, add a departments map, radio buttons for the type of vaccine, barplot for ages
 with ui.nav_panel(title="Detailed Vaccination", # Title
                     icon=icons("restroom"),
                     ):
     # Main message
     f"Review of data on the specific vaccination situation" 
-
-# TODO: Add a reactive sidebar, a sex checkbox and a age range slider. May be the most reactive part of the app
