@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import mplcyberpunk
 import plotly.graph_objects as go
+import plotly.express as px
 from functools import partial
 from shiny.express import ui, input
-from shinywidgets import render_plotly
+from shinywidgets import render_plotly, render_widget
 from shiny import reactive, render, req
 from shiny.ui import page_navbar
 from faicons import icon_svg as icons
@@ -109,7 +110,8 @@ with ui.nav_panel(title="Hospital Situation", # Title
     with ui.layout_columns(fill=False):
 
         # Pie chart od deaths
-        @render.plot
+        # TODO: Analyse the data or review the aggregation results
+        @render_plotly
         def plot_deaths_pie():
             # Preparing data
             year = input.year_slider_p1()
@@ -119,17 +121,10 @@ with ui.nav_panel(title="Hospital Situation", # Title
             deaths = data[['dchosp', 'esms_dc']].sum()
 
             # Pie chart of deaths
-            pie_chart = plt.figure(dpi=100)
-            plt.title(f"Deaths in {year}", fontsize=13, fontweight="semibold")
-            # Labels and colors
-            labels = ['In Hospitals', 'In SMSES']
-            explode = (0, 0.1)
-            colors = ['dimgrey', 'gainsboro']
-            # customizing the pie chart
-            plt.pie(deaths, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
-            plt.axis('equal')
-            plt.legend(loc='best')
-            plt.tight_layout()
+            pie_chart = px.pie(deaths, values=deaths, names=["in hospitals", "in SMSES"],title=f"Deaths in {year}",
+                                color=["Prism", "Safe"],
+                                color_discrete_map={"Prism": "rgb(102, 102, 102)",
+                                                    "Safe": "rgb(179, 179, 179)"})
             
             return pie_chart
 
