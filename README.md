@@ -48,7 +48,7 @@ This will open a browser window with the dashboard. You can also access it from 
 
 Here are some screenshots of the dashboard:
 
-![Hospitalisations](screenshots\hospitalisations.png)
+![Hospitalisations](https://github.com/ElBaron86/Covid-19-Shiny-Dashboard-Using-Python/blob/main/screenshots/hospitalisations.png)
 
 
 ## Sources
