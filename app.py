@@ -1,31 +1,35 @@
 # Importing modules
+
+# Data manipulation
 import pandas as pd
+
+# Data visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
 import mplcyberpunk
 import plotly.graph_objects as go
 import plotly.express as px
-from functools import partial
+import json
+
+# Dashboard modules
 from shiny.express import ui, input
 from shinywidgets import render_plotly, render_widget
 from shiny import reactive, render, req
+from functools import partial
 from shiny.ui import page_navbar
 from faicons import icon_svg as icons
-import json
+
+# My cleaning functions
+from scripts.data_cleaning import clean_hosp_data, clean_vaccination_region_data
 
 # TODO: Add a section to the bottom to display my name and the date of the last update of the dashboard
 
 # Loading and configuring data
 # hospitalisations data
-data_p1 = pd.read_csv("data/indicateur-suivi.csv")
-data_p1["date"] = pd.to_datetime(data_p1["date"])
-data_p1["year"] = data_p1["date"].dt.year
-data_p1["month"] = data_p1["date"].dt.month_name()
+data_p1 = clean_hosp_data()
 
 # vaccination data
-data_p2 = pd.read_csv("data/vacsi-v-reg-2023-07-13-15h51.csv", sep=";")
-data_p2["jour"] = pd.to_datetime(data_p2["jour"])
-data_p2['jour'] = data_p2['jour'].dt.date
+data_p2 = clean_vaccination_region_data()
 
 ## Geojson data
 regions = json.load(open("data/regions.geojson", "r"))
@@ -47,7 +51,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
     ui.markdown("Review of data on the situation in hospitals during the COVID-19 pandemic in France. This data comes from the data.gouv.fr website")
 
     # Sidebar
-    ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2020, step=1)
+    ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2021, step=1)
 
     # Reactive data filtering
     @reactive.calc
@@ -74,7 +78,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total Hospitalizations"
             @render.express
             def total_hosp():
-                int(data_p1_filtered()['hosp'].sum())
+                int(data_p1_filtered()['incid_hosp'].sum())
 
         # Total reanimations valuebox
         with ui.value_box(showcase=icons("bed-pulse"),
@@ -83,7 +87,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total In Reanimation"
             @render.express
             def total_rea():
-                int(data_p1_filtered()['rea'].sum())
+                int(data_p1_filtered()['incid_rea'].sum())
 
         # Total deaths valuebox
         with ui.value_box(showcase=icons("house-user"),
@@ -92,7 +96,7 @@ with ui.nav_panel(title="Hospital Situation", # Title
             "Total Returning Home"
             @render.express
             def total_returns():
-                int(data_p1_filtered()['rad'].max())
+                int(data_p1_filtered()['incid_rad'].max())
 
         # Total returns home valuebox
         with ui.value_box(showcase=icons("skull"),
@@ -109,17 +113,16 @@ with ui.nav_panel(title="Hospital Situation", # Title
     # Hospitalisation plot with matplotlib & seaborn tuned with mplcyberpunk
     with ui.layout_columns(fill=False):
 
-# TODO: Analyse the data or review the aggregation results
-        # Pie chart od deaths
         @render_plotly
         def plot_deaths_pie():
             # Preparing data
             year = input.year_slider_p1()
-            data = data_p1.groupby(['year']).agg({'dchosp': 'sum',
-                                                    'esms_dc' : 'sum'}).reset_index()
             data = data_p1[data_p1['year'] == year]
-            deaths = data[['dchosp', 'esms_dc']].sum()
-
+            deaths = data.groupby(by=['year']).agg({'dchosp' : 'max',
+                                                    'esms_dc' : 'max'}).reset_index()
+            
+            # Sum just to unify the plot and provide error handling
+            deaths = deaths.drop(columns=['year']).sum()
             # Pie chart of deaths
             pie_chart = px.pie(deaths, values=deaths, names=["in hospitals", "in SMSES"],title=f"Deaths in {year}",
                                 color=["Prism", "Safe"],
@@ -133,28 +136,35 @@ with ui.nav_panel(title="Hospital Situation", # Title
 
             plt.style.use("seaborn-v0_8")
 
-            # Gouping data to unify the plot
+            # Preparing data
             year = input.year_slider_p1()
-            data = data_p1.groupby(['year', 'month']).agg({'hosp': 'sum',
-                                                            'rea': 'sum',
-                                                            'rad' : 'sum',
-                                                            'dchosp' : 'sum'}).reset_index()
             data = data_p1[data_p1['year'] == year]
+
+            colors = ['orange' if 0.7 < to < 0.9 else 'red' if to > 0.9 else 'blue' for to in list(data['TO'])]
             
             # defining the plot
-            fig = plt.figure(dpi=100)
-            sns.lineplot(x=data['month'], y=data['hosp'], label="new hospitalizations", markers=True, marker="p", color="red")
-            sns.lineplot(x=data['month'], y=data['rea'], label="in reanimations", markers=True, marker="4", color = "orange")
-            sns.lineplot(x=data['month'], y=data['rad'], label="returned home", markers=True, marker="P", color="green")
-            sns.lineplot(x=data['month'], y=data['dchosp'], label="died in hospital", markers=True, marker=".", color="dimgray")
-            plt.title(f"Situation in hospitals in {year}", fontsize=13, fontweight="semibold")
+            fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, sharey=False, gridspec_kw={'height_ratios': [0.6, 2]})
+
+            #ax1.set_title(f"Hospital tension on intensive care capacity in {year}")
+            ax1.set_ylabel("Tension rate")
+            sns.barplot(data=data[data['year']==year], x='month', y='TO', hue='month', palette=colors, legend=False, ax=ax1)
+
+
+            # Plot the line plot on the second subplot
+            #ax2.set_title(f"Situation in hospitals in {year}")
+            sns.lineplot(data= data, x='month', y='incid_hosp', label="new hospitalizations", markers=True, marker="p", color="red", ax=ax2)
+            sns.lineplot(data = data, x='month', y='incid_rea', label="in reanimations", markers=True, marker="4", color = "orange", ax=ax2)
+            sns.lineplot(data = data, x='month', y='incid_rad', label="returned home", markers=True, marker="P", color="green", ax=ax2)
+            sns.lineplot(data = data, x='month', y='incid_dchosp', label="died in hospital", markers=True, marker=".", color="dimgray", ax=ax2)
+            ax2.set_ylabel("Number of people")
+            ax2.set_xticks(range(len(data['month'])))
+            ax2.set_xticklabels(data['month'], rotation=45)
+
             # Adding the cyberpunk style
             mplcyberpunk.add_underglow()
             mplcyberpunk.make_lines_glow(alpha_line=0.4)
             mplcyberpunk.add_gradient_fill(alpha_gradientglow=0.6)
-            # Axis properties
-            plt.ylabel("Number of people")
-            plt.xticks(rotation=45)
+
             plt.tight_layout()
 
             return fig
