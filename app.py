@@ -7,6 +7,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import mplcyberpunk
+from plotly.subplots import make_subplots
+import plotly.tools as tls
 import plotly.graph_objects as go
 import plotly.express as px
 import json
@@ -22,9 +24,7 @@ from faicons import icon_svg as icons
 # My cleaning functions
 from scripts.data_cleaning import clean_hosp_data, clean_vaccination_region_data
 
-# TODO: Add a section to the bottom to display my name and the date of the last update of the dashboard
-
-# Loading and configuring data
+# Preparing data
 # hospitalisations data
 data_p1 = clean_hosp_data()
 
@@ -38,7 +38,7 @@ regions = json.load(open("data/regions.geojson", "r"))
 ui.page_opts(
     title="COVID 19 Dashoard - France",
     # Adding a navbar to the page
-    page_fn=partial(page_navbar, id="page_vavbar", fillable=True, bg="light"),
+    page_fn=partial(page_navbar, id="page_vavbar", fillable=True, bg="mediumpurple"),
 )
 
 # ------------------------------------------------- #
@@ -48,10 +48,11 @@ ui.page_opts(
 with ui.nav_panel(title="Hospital Situation", # Title
                     icon=icons("hospital")):
     # Main message
-    ui.markdown("Review of data on the situation in hospitals during the COVID-19 pandemic in France. This data comes from the data.gouv.fr website")
+    ui.markdown("**About :**\n"
+                "This dashboard offers an analysis of data on the Covid-19 pandemic in France. This data comes from [data.gouv](https://www.data.gouv.fr/fr/datasets/) and was used for free exploration purposes.")
 
     # Sidebar
-    ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2021, step=1)
+    ui.input_slider(id="year_slider_p1", label="Year", min=2020, max=2023, value=2020, step=1)
 
     # Reactive data filtering
     @reactive.calc
@@ -107,11 +108,12 @@ with ui.nav_panel(title="Hospital Situation", # Title
             def total_deaths():
                 int(data_p1_filtered()['dc_tot'].max())
 
-# Card containing the information about the hospitalisations graph
-    ui.markdown("The following graph shows the evolution of hospital observations during the pandemic. This data has been aggregated by month for the Situations plot and by year for the pie chart. SMSES stands for 'Social or medico-social establishment or service'.")
+# Displaying a description of graphs
+    ui.markdown("**About the graphs :**\n"
+                "The following graph shows the evolution of hospital observations during the pandemic. This data has been aggregated by month for the Situations plot and by year for the pie chart. SMSES stands for 'Social or medico-social establishment or service and 'Tension rate' is the COVID-19 intensive care unit bed occupancy rate.")
 
-    # Hospitalisation plot with matplotlib & seaborn tuned with mplcyberpunk
-    with ui.layout_columns(fill=False):
+    # Hospitalisation plot
+    with ui.layout_columns(col_widths=[3, 9], fill=False):
 
         @render_plotly
         def plot_deaths_pie():
@@ -130,8 +132,8 @@ with ui.nav_panel(title="Hospital Situation", # Title
                                                     "Safe": "rgb(179, 179, 179)"})
             
             return pie_chart
-# TODO: change this plot to a plotly plot that look the same as the actual plot
-        @render.plot
+
+        @render_plotly
         def plot_hospitalisations():
 
             plt.style.use("seaborn-v0_8")
@@ -142,33 +144,70 @@ with ui.nav_panel(title="Hospital Situation", # Title
 
             colors = ['orange' if 0.7 < to < 0.9 else 'red' if to > 0.9 else 'blue' for to in list(data['TO'])]
             
-            # defining the plot
-            fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, sharey=False, gridspec_kw={'height_ratios': [0.6, 2]})
+            # Subplot for tension rate & hospitalizations
+            fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
+                                subplot_titles=(f"Average tension rate per month in {year}", ""),
+                                row_heights=[0.2, 0.8], vertical_spacing=0.02)
+            # Bar plot for tension rate
+            fig.add_trace(go.Bar(
+                x=data['month'],
+                y=data['TO'],
+                marker=dict(color=colors),
+                name="Tension Rate"
+            ), row=1, col=1)
+            # New hospitalizations line plot
+            fig.add_trace(go.Scatter(
+                x=data['month'],
+                y=data['incid_hosp'],
+                mode='lines+markers',
+                name="New Hospitalizations",
+                line=dict(color='red'),
+                marker=dict(symbol='circle')
+            ), row=2, col=1)
+            # Reanimation line plot
+            fig.add_trace(go.Scatter(
+                x=data['month'],
+                y=data['incid_rea'],
+                mode='lines+markers',
+                name="In Reanimations",
+                line=dict(color='orange'),
+                marker=dict(symbol='square')
+            ), row=2, col=1)
+            # Returned home line plot
+            fig.add_trace(go.Scatter(
+                x=data['month'],
+                y=data['incid_rad'],
+                mode='lines+markers',
+                name="Returned Home",
+                line=dict(color='green'),
+                marker=dict(symbol='diamond')
+            ), row=2, col=1)
+            # Death line plot
+            fig.add_trace(go.Scatter(
+                x=data['month'],
+                y=data['incid_dchosp'],
+                mode='lines+markers',
+                name="Died in Hospital",
+                line=dict(color='dimgray'),
+                marker=dict(symbol='cross')
+            ), row=2, col=1)
 
-            #ax1.set_title(f"Hospital tension on intensive care capacity in {year}")
-            ax1.set_ylabel("Tension rate")
-            sns.barplot(data=data[data['year']==year], x='month', y='TO', hue='month', palette=colors, legend=False, ax=ax1)
-
-
-            # Plot the line plot on the second subplot
-            #ax2.set_title(f"Situation in hospitals in {year}")
-            sns.lineplot(data= data, x='month', y='incid_hosp', label="new hospitalizations", markers=True, marker="p", color="red", ax=ax2)
-            sns.lineplot(data = data, x='month', y='incid_rea', label="in reanimations", markers=True, marker="4", color = "orange", ax=ax2)
-            sns.lineplot(data = data, x='month', y='incid_rad', label="returned home", markers=True, marker="P", color="green", ax=ax2)
-            sns.lineplot(data = data, x='month', y='incid_dchosp', label="died in hospital", markers=True, marker=".", color="dimgray", ax=ax2)
-            ax2.set_ylabel("Number of people")
-            ax2.set_xticks(range(len(data['month'])))
-            ax2.set_xticklabels(data['month'], rotation=45)
-
-            # Adding the cyberpunk style
-            mplcyberpunk.add_underglow()
-            mplcyberpunk.make_lines_glow(alpha_line=0.4)
-            mplcyberpunk.add_gradient_fill(alpha_gradientglow=0.6)
-
-            plt.tight_layout()
+            # Show legend on the bottom subplot
+            fig.update_traces(showlegend=True, row=2, col=1)
+            # Update layout
+            fig.update_layout(
+                yaxis=dict(title="Tension rate", range=[0, 1.5]),
+                yaxis2=dict(title="Number of people", range=[0, 100000]),
+                xaxis2=dict(title="Month"),
+                height=600,
+                showlegend=False
+            )
 
             return fig
         
+    # About Me
+    ui.markdown("**About Me :**\n"
+                "I made this dashboard to practice my shiny visualization skills and to provide a tool for the public to understand the Covid-19 situation in France. I hope you find it useful. If you have any questions or suggestions, feel free to visit my [github](https://github.com/ElBaron86/Covid-19-Shiny-Dashboard-Using-Python.git).")
 
 
 # ------------------------------------------------- #
