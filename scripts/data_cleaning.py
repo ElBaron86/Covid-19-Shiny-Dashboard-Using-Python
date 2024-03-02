@@ -8,17 +8,39 @@ import pandas as pd
 import numpy as np
 
 # ------------------------------------------------- #
-######## Hospitalizations Data ########
+######## Vaccination Data ########
 # ------------------------------------------------- #
 
-def clean_vaccination_region_data(path : str = "data/vacsi-v-reg-2023-07-13-15h51.csv"):
+#TODO: Add a zip to decompress the data
+def clean_vaccination_data(path_locs : str = "data/communes-departement-region.csv",
+                            path_vaccination_reg : str = "data/vacsi-v-reg-2023-07-13-15h51.csv",
+                            path_vaccination_dep : str = "data/vacsi-v-dep-2023-07-13-15h51.csv"):
+    
+    # Loading the required files
+    locs = pd.read_csv(path_locs, usecols=["code_departement", "code_region"])
+    vacci_reg = pd.read_csv(path_vaccination_reg, sep=";")
+    vacci_dep = pd.read_csv(path_vaccination_dep, sep=";", low_memory=False)
 
-    # Data loading
-    vacci_reg = pd.read_csv("data/vacsi-v-reg-2023-07-13-15h51.csv", sep=";")
+    # Preprocessing the data
+    vacci_dep['jour'] = pd.to_datetime(vacci_dep['jour'])
     vacci_reg['jour'] = pd.to_datetime(vacci_reg['jour'])
-    vacci_reg['jour'] = vacci_reg['jour'].dt.date
-    # vaccination code 8 doesn't exist in the documentation
-    vacci_reg = vacci_reg[vacci_reg['vaccin'] != 8]
+    vacci_reg = vacci_reg[~vacci_reg['reg'].isin([7, 8])] # Regions 7 and 8 are not in the list of regions in France
+    locs.dropna(subset=['code_departement', 'code_region'], inplace=True)
+    locs['code_region'] = locs['code_region'].astype(int)
+
+    def add_zero(col):
+        if len(col) == 1:
+            return "0" + col
+        else:
+            return col
+    # Adding a '0' when the code_departement is a single digit
+    locs['code_departement'] = locs['code_departement'].apply(add_zero)
+    locs.drop_duplicates(inplace=True)
+    locs.rename(columns={"code_departement": "dep", "code_region": "reg"}, inplace=True)
+
+    vacci_reg = vacci_reg[vacci_reg['vaccin'] != 8] # vaccination code 8 doesn't exist in the documentation
+    vacci_dep = vacci_dep[vacci_dep['vaccin'] != 8]
+
 
     # vaccination names according to the metadata
     vaccins = {0 : "Tous vaccins",
@@ -34,9 +56,18 @@ def clean_vaccination_region_data(path : str = "data/vacsi-v-reg-2023-07-13-15h5
                 12 : "Spikevax Bivalent Ori/Omi BA.5 (Moderna)"}
 
     vacci_reg["vaccin"] = vacci_reg["vaccin"].map(vaccins)
-    # dropping cumulative columns because i'm only interested in the daily data for aggregation in the app
-    vacci_reg = vacci_reg.drop(columns=[col for col in vacci_reg.columns if 'cum' in col])
-    return vacci_reg
+    vacci_dep["vaccin"] = vacci_dep["vaccin"].map(vaccins)
+
+    # Merging regions and departments for the vaccination data
+    vacci_dep = vacci_dep.merge(locs, on="dep", how="left")
+    vacci_reg = vacci_reg.merge(locs, on="reg", how="left")
+
+    vacci_dep.dropna(subset=['reg'], inplace=True)
+
+    vacci = vacci_reg.merge(vacci_dep, on=["jour", "vaccin", "dep", "reg"], suffixes=('_reg', '_dep'))
+    vacci.to_csv("data/vaccination.csv", index=False)
+
+    return vacci
 
 
 # ------------------------------------------------- #

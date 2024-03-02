@@ -2,11 +2,11 @@
 
 # Data manipulation
 import pandas as pd
+import numpy as np
 
 # Data visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
-import mplcyberpunk
 from plotly.subplots import make_subplots
 import plotly.tools as tls
 import plotly.graph_objects as go
@@ -22,17 +22,19 @@ from shiny.ui import page_navbar
 from faicons import icon_svg as icons
 
 # My cleaning functions
-from scripts.data_cleaning import clean_hosp_data, clean_vaccination_region_data
+from scripts.data_cleaning import clean_hosp_data
 
 # Preparing data
 # hospitalisations data
 data_p1 = clean_hosp_data()
 
 # vaccination data
-data_p2 = clean_vaccination_region_data()
+data_p2 = pd.read_csv("data/vaccination.csv", low_memory=False)
+data_p2['jour'] = pd.to_datetime(data_p2['jour']).dt.date
 
 ## Geojson data
 regions = json.load(open("data/regions.geojson", "r"))
+departments = json.load(open("data/departements.geojson", "r"))
 
 # Adding page title 
 ui.page_opts(
@@ -223,7 +225,7 @@ with ui.nav_panel(title="Vaccination Situation", # Title
     # Reactive data filtering
     @reactive.calc
     def data_p2_filtered():
-        return data_p2[(data_p2['jour'] >= input.date_range_p2()[0]) & (data_p2['jour'] <= input.date_range_p2()[1])].groupby(by=["reg", "jour"]).sum().reset_index()
+        return data_p2[(data_p2['jour'] >= input.date_range_p2()[0]) & (data_p2['jour'] <= input.date_range_p2()[1])].groupby(by=["jour", "reg", "dep"]).sum().reset_index()
 
     # Valueboxes Container
     with ui.layout_columns(fill=False):
@@ -236,7 +238,9 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             "One dose received"
             @render.express
             def total_dose1():
-                int(data_p2_filtered()['n_dose1'].sum())
+                regs = list(data_p2_filtered()['reg'].unique())
+                res = [data_p2_filtered()[data_p2_filtered()['reg'] == reg]['n_cum_dose1_reg'].max() for reg in regs]
+                int(np.sum(res))
 
         # Total 2nd doses valuebox
         with ui.value_box(showcase=icons("syringe"),
@@ -244,7 +248,9 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             "Two doses received"
             @render.express
             def total_dose2():
-                int(data_p2_filtered()['n_dose2'].sum())
+                regs = list(data_p2_filtered()['reg'].unique())
+                res = [data_p2_filtered()[data_p2_filtered()['reg'] == reg]['n_cum_dose2_reg'].max() for reg in regs]
+                int(np.sum(res))
 
         # Total 3 doses valuebox
         with ui.value_box(showcase=icons("syringe"),
@@ -252,7 +258,9 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             "Three doses received"
             @render.express
             def total_dose3():
-                int(data_p2_filtered()['n_dose3'].sum())
+                regs = list(data_p2_filtered()['reg'].unique())
+                res = [data_p2_filtered()[data_p2_filtered()['reg'] == reg]['n_cum_dose3_reg'].max() for reg in regs]
+                int(np.sum(res))
 
         # Total 4 doses valuebox
         with ui.value_box(showcase=icons("syringe"),
@@ -260,19 +268,24 @@ with ui.nav_panel(title="Vaccination Situation", # Title
             "Four doses received"
             @render.express
             def total_dose4():
-                int(data_p2_filtered()['n_dose4'].sum())
+                regs = list(data_p2_filtered()['reg'].unique())
+                res = [data_p2_filtered()[data_p2_filtered()['reg'] == reg]['n_cum_dose4_reg'].max() for reg in regs]
+                int(np.sum(res))
     # Message nefore the map
     ui.markdown("The following graph...")
 
 # TODO: Analye the data to verify the aggregation results. Add a barplot with plotly for gender.
 # The barplot will be placed between the radio buttons and the map
-    with ui.layout_columns(fill=False):
+    with ui.layout_columns(col_widths=(2, 2, 8),fill=False):
 
         # Radio buttons for the type of vaccine
         ui.input_radio_buttons(  
             "radio_ndose","Number of doses",  
             {"n_dose1": "1 dose", "n_dose2": "2 doses", "n_dose3": "3 doses", "n_dose4": "4 doses"},  
             )  
+        
+        # Selectsize for regions or departments
+        ui.input_selectize("loc_type", "Select a option below:", {"reg": "Regions", "dep": "Departments"},)
 
         # Regions map of vaccination
         @render_plotly
@@ -280,14 +293,18 @@ with ui.nav_panel(title="Vaccination Situation", # Title
 
             # data preparation
             data = data_p2_filtered()
-            data = data.groupby(by=["reg"]).agg({input.radio_ndose() : "sum"}).reset_index()
+            data = data.groupby(by=[input.loc_type()]).agg({(input.radio_ndose()+'_'+input.loc_type()) : "sum"}).reset_index()
+            if input.loc_type() == "dep":
+                loc = departments
+            else:
+                loc = regions
             
-            fig = px.choropleth_mapbox(data, geojson=regions, locations='reg', featureidkey="properties.code",
-                                        color=input.radio_ndose(), color_continuous_scale="Viridis",
-                                        range_color=(data[input.radio_ndose()].min(), int(data[input.radio_ndose()].max())),
-                                        mapbox_style="carto-positron",
-                                        zoom=4, center = {"lat": 46.18680055591775, "lon": 2.547157538666192},
-                                        opacity=0.5)
+            fig = px.choropleth_mapbox(data, geojson = loc, locations = input.loc_type(), featureidkey = "properties.code",
+                                        color = (input.radio_ndose()+'_'+input.loc_type()), color_continuous_scale = "Viridis",
+                                        range_color = (data[ (input.radio_ndose()+'_'+input.loc_type()) ].min(), int(data[ (input.radio_ndose()+'_'+input.loc_type()) ].max())),
+                                        mapbox_style = "carto-positron",
+                                        zoom = 4, center = {"lat": 46.18680055591775, "lon": 2.547157538666192},
+                                        opacity = 0.5)
 
             fig.update_layout(title=f"Vaccination by Region")
             return fig
