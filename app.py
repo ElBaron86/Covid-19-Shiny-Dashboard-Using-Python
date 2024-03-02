@@ -277,10 +277,14 @@ with ui.nav_panel(title="Vaccination Situation", # Title
         # Regions map of vaccination
         @render_plotly
         def regions_map():
+
+            # data preparation
+            data = data_p2_filtered()
+            data = data.groupby(by=["reg"]).agg({input.radio_ndose() : "sum"}).reset_index()
             
-            fig = px.choropleth_mapbox(data_p2_filtered(), geojson=regions, locations='reg', featureidkey="properties.code",
+            fig = px.choropleth_mapbox(data, geojson=regions, locations='reg', featureidkey="properties.code",
                                         color=input.radio_ndose(), color_continuous_scale="Viridis",
-                                        range_color=(int(data_p2_filtered()[input.radio_ndose()].min()), int(data_p2_filtered()[input.radio_ndose()].max())),
+                                        range_color=(data[input.radio_ndose()].min(), int(data[input.radio_ndose()].max())),
                                         mapbox_style="carto-positron",
                                         zoom=4, center = {"lat": 46.18680055591775, "lon": 2.547157538666192},
                                         opacity=0.5)
