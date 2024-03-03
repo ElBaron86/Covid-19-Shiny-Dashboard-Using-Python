@@ -21,18 +21,19 @@ from functools import partial
 from shiny.ui import page_navbar
 from faicons import icon_svg as icons
 
-# My cleaning functions
-from scripts.data_cleaning import clean_hosp_data
+# Loading prepared data
+# Hospitalisations data
+data_p1 = pd.read_csv("data/indicateur-suivi.csv")
 
-# Preparing data
-# hospitalisations data
-data_p1 = clean_hosp_data()
-
-# vaccination data
+# Vaccination data
 data_p2 = pd.read_csv("data/vaccination.csv", low_memory=False)
 data_p2['jour'] = pd.to_datetime(data_p2['jour']).dt.date
 
-## Geojson data
+# Vaccination detailed data
+data_p3 = pd.read_csv("data/vaccination_detailed.csv", low_memory=False)
+data_p3['jour'] = pd.to_datetime(data_p3['jour']).dt.date
+
+# Geojson data
 regions = json.load(open("data/regions.geojson", "r"))
 departments = json.load(open("data/departements.geojson", "r"))
 

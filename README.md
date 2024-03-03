@@ -50,6 +50,8 @@ Here are some screenshots of the dashboard:
 
 ![Hospitalisations](https://github.com/ElBaron86/Covid-19-Shiny-Dashboard-Using-Python/blob/main/screenshots/hospitalisations.png)
 
+![Vaccination](https://github.com/ElBaron86/Covid-19-Shiny-Dashboard-Using-Python/blob/main/screenshots/vaccination.png)
+
 
 ## Sources
 
@@ -58,5 +60,9 @@ I would like to thank the following sources for providing the data and the inspi
 - [vaccinations](https://www.data.gouv.fr/fr/datasets/donnees-relatives-aux-personnes-vaccinees-contre-la-covid-19-1/)
 
 - [indicateurs-suivi](https://www.data.gouv.fr/fr/datasets/synthese-des-indicateurs-de-suivi-de-lepidemie-covid-19/)
+
+- [communes-departement-region](https://www.data.gouv.fr/fr/datasets/communes-de-france-base-des-codes-postaux/)
+
+- [geojson files](https://france-geojson.gregoiredavid.fr/)
 
 
