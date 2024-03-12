@@ -226,7 +226,7 @@ with ui.nav_panel(title="Vaccination Situation", # Title
     # Reactive data filtering
     @reactive.calc
     def data_p2_filtered():
-        return data_p2[(data_p2['jour'] >= input.date_range_p2()[0]) & (data_p2['jour'] <= input.date_range_p2()[1])].groupby(by=["jour", "reg", "dep"]).sum().reset_index()
+        return data_p2[(data_p2['jour'] >= input.date_range_p2()[0]) & (data_p2['jour'] <= input.date_range_p2()[1])]
 
     # Valueboxes Container
     with ui.layout_columns(fill=False):
@@ -282,7 +282,7 @@ with ui.nav_panel(title="Vaccination Situation", # Title
         # Radio buttons for the type of vaccine
         ui.input_radio_buttons(  
             "radio_ndose","Number of doses",  
-            {"n_dose1": "1 dose", "n_dose2": "2 doses", "n_dose3": "3 doses", "n_dose4": "4 doses"},  
+            {"n_cum_dose1": "1 dose", "n_cum_dose2": "2 doses", "n_cum_dose3": "3 doses", "n_cum_dose4": "4 doses"},  
             )  
         
         # Selectsize for regions or departments
@@ -294,7 +294,7 @@ with ui.nav_panel(title="Vaccination Situation", # Title
 
             # data preparation
             data = data_p2_filtered()
-            data = data.groupby(by=[input.loc_type()]).agg({(input.radio_ndose()+'_'+input.loc_type()) : "sum"}).reset_index()
+            data = data.groupby(by=[input.loc_type()]).agg({(input.radio_ndose()+'_'+input.loc_type()) : "max"}).reset_index()
             if input.loc_type() == "dep":
                 loc = departments
             else:
@@ -319,3 +319,13 @@ with ui.nav_panel(title="Detailed Vaccination", # Title
                     ):
     # Main message
     f"Review of data on the specific vaccination situation" 
+
+    # Date range input
+    ui.input_date_range("date_range_p3", "Date Range", start="2020-12-27")
+
+    # Reactive data filtering
+    @reactive.calc
+    def data_p3_filtered():
+        return data_p3[(data_p3['jour'] >= input.date_range_p3()[0]) & (data_p3['jour'] <= input.date_range_p3()[1])]
+    
+
