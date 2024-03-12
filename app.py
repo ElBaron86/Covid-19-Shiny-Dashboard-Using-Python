@@ -23,7 +23,7 @@ from faicons import icon_svg as icons
 
 # Loading prepared data
 # Hospitalisations data
-data_p1 = pd.read_csv("data/indicateur-suivi.csv")
+data_p1 = pd.read_csv("data/indicateur-suivi_cleaned.csv")
 
 # Vaccination data
 data_p2 = pd.read_csv("data/vaccination.csv", low_memory=False)
@@ -328,4 +328,20 @@ with ui.nav_panel(title="Detailed Vaccination", # Title
     def data_p3_filtered():
         return data_p3[(data_p3['jour'] >= input.date_range_p3()[0]) & (data_p3['jour'] <= input.date_range_p3()[1])]
     
+    # Container for genre_radio buttons, barplot and barchart
+    with ui.layout_columns(col_widths=(2, 5, 5), fill=False):
+
+        # Radio button for the genre
+        ui.input_radio_buttons(
+            "genre_radio", "Genre",
+            {"f" : "Female", "h" : "Male"},
+        )
+
+        # Barplot for the age
+        @render_plotly
+        def age_barplot():
+
+            # Preparing data
+            data = data_p3_filtered()
+            data = data.groupby(by=['clage_vacsi']).agg()
 

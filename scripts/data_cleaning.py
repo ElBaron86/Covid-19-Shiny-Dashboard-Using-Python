@@ -145,7 +145,8 @@ def clean_vaccination_detailed_data(path_locs : str = "data/communes-departement
                 49 : "40-49",
                 59 : "50-59",
                 64 : "60-64",
-                74 : "65-74",
+                69 : "65-69",
+                74 : "70-74",
                 79 : "75-79",
                 80 : "80 et +"}
 
@@ -155,19 +156,15 @@ def clean_vaccination_detailed_data(path_locs : str = "data/communes-departement
     # Merging regions and departments for the vaccination data
     vacci_dep = vacci_dep.merge(locs, on="dep", how="left")
     vacci_reg = vacci_reg.merge(locs, on="reg", how="left")
-
     vacci_dep.dropna(subset=['reg'], inplace=True)
 
+    # Merging the regions and departments data
     vacci = vacci_reg.merge(vacci_dep, on=["jour", "clage_vacsi", "dep", "reg"], suffixes=('_reg', '_dep'))
     keep_cols = ['reg','dep', 'clage_vacsi', 'jour', 'n_cum_dose1_h_reg', 'n_cum_dose1_f_reg', 'n_cum_dose1_h_dep',
                 'n_cum_dose1_f_dep', 'n_cum_rappel_h_reg', 'n_cum_rappel_f_reg', 'n_cum_rappel_h_dep', 'n_cum_rappel_f_dep',
                 'n_cum_2_rappel_h_reg', 'n_cum_2_rappel_f_reg', 'n_cum_2_rappel_h_dep', 'n_cum_2_rappel_f_dep', 'n_cum_3_rappel_h_reg',
                 'n_cum_3_rappel_f_reg', 'n_cum_3_rappel_h_dep', 'n_cum_3_rappel_f_dep']
     vacci = vacci[keep_cols]
-    
-    # Filling missing values of 'clage_vacsi' with 'Tous ages' in the resulted dataframe because there are regions without age specified
-    vacci['clage_vacsi'].fillna('Tous ages', inplace=True)
-    
     # Saving the cleaned data
     vacci.to_csv("data/vaccination_detailed.csv", index=False)
 
@@ -212,7 +209,7 @@ def clean_hosp_data(path : str = "data/indicateur-suivi.csv"):
     # Ordering the months
     month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     indicateurs.sort_values('month', key=lambda x: x.map({v: i for i, v in enumerate(month_order)}), inplace=True)
-    indicateurs.to_csv("data/indicateur-suivi.csv", index=False)
+    indicateurs.to_csv("data/indicateur-suivi_cleaned.csv", index=False)
 
     return 0
 
