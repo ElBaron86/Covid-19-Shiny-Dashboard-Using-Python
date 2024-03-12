@@ -17,9 +17,27 @@ Vaccination data includes the following files:
 - communes-departement-region : https://www.data.gouv.fr/fr/datasets/communes-de-france-base-des-codes-postaux/
 - indicateur-suivi.csv : https://www.data.gouv.fr/fr/datasets/synthese-des-indicateurs-de-suivi-de-lepidemie-covid-19/
 """
+
 # Modules importation
+import sys
+import time
 import pandas as pd
 import numpy as np
+
+# Logging configuration
+import logging
+LOG_FILE_PATH = "logs/data_cleaning.log"
+logging.basicConfig(filename=LOG_FILE_PATH, level=logging.INFO)
+# Console handler
+console = logging.StreamHandler(sys.stdout) # Print the logs in the console
+console.setLevel(logging.ERROR) # Only errors will be displayed in the console
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S') # The format of the logs
+console.setFormatter(formatter) # Set the format to the console handler
+logging.getLogger('').addHandler(console) # Add the console handler to the root logger
+# Log the system date and time as the first line in the log file
+with open(LOG_FILE_PATH, 'a', encoding="utf-8") as log_file:
+    log_file.write(f"System Date and Time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+
 
 # ------------------------------------------------- #
 ######## Vaccination Data ########
@@ -42,19 +60,19 @@ def clean_vaccination_data(path_locs : str = "data/communes-departement-region.c
     locs.dropna(subset=['code_departement', 'code_region'], inplace=True)
     locs['code_region'] = locs['code_region'].astype(int)
 
+    # Adding a '0' when the code_departement is a single digit
     def add_zero(col):
         if len(col) == 1:
             return "0" + col
         else:
             return col
-    # Adding a '0' when the code_departement is a single digit
+        
     locs['code_departement'] = locs['code_departement'].apply(add_zero)
     locs.drop_duplicates(inplace=True)
     locs.rename(columns={"code_departement": "dep", "code_region": "reg"}, inplace=True)
 
     vacci_reg = vacci_reg[vacci_reg['vaccin'] != 8] # vaccination code 8 doesn't exist in the documentation
     vacci_dep = vacci_dep[vacci_dep['vaccin'] != 8]
-
 
     # vaccination names according to the metadata
     vaccins = {0 : "Tous vaccins",
@@ -104,12 +122,13 @@ def clean_vaccination_detailed_data(path_locs : str = "data/communes-departement
     locs.dropna(subset=['code_departement', 'code_region'], inplace=True)
     locs['code_region'] = locs['code_region'].astype(int)
 
+    # Adding a '0' when the code_departement is a single digit
     def add_zero(col):
         if len(col) == 1:
             return "0" + col
         else:
             return col
-    # Adding a '0' when the code_departement is a single digit
+
     locs['code_departement'] = locs['code_departement'].apply(add_zero)
     locs.drop_duplicates(inplace=True)
     locs.rename(columns={"code_departement": "dep", "code_region": "reg"}, inplace=True)
@@ -145,6 +164,11 @@ def clean_vaccination_detailed_data(path_locs : str = "data/communes-departement
                 'n_cum_2_rappel_h_reg', 'n_cum_2_rappel_f_reg', 'n_cum_2_rappel_h_dep', 'n_cum_2_rappel_f_dep', 'n_cum_3_rappel_h_reg',
                 'n_cum_3_rappel_f_reg', 'n_cum_3_rappel_h_dep', 'n_cum_3_rappel_f_dep']
     vacci = vacci[keep_cols]
+    
+    # Filling missing values of 'clage_vacsi' with 'Tous ages' in the resulted dataframe because there are regions without age specified
+    vacci['clage_vacsi'].fillna('Tous ages', inplace=True)
+    
+    # Saving the cleaned data
     vacci.to_csv("data/vaccination_detailed.csv", index=False)
 
     return 0
@@ -193,12 +217,15 @@ def clean_hosp_data(path : str = "data/indicateur-suivi.csv"):
     return 0
 
 if __name__ == "__main__":
-    print("="*50)
-    print("Data cleaning is starting...")
+    logging.info("="*50)
+    logging.info("Data cleaning is starting...")
+    logging.info("="*50)
     clean_vaccination_data()
-    print("Vaccination data is cleaned!")
+    logging.info("Vaccination data is cleaned!")
     clean_vaccination_detailed_data()
-    print("Vaccination detailed data is cleaned!")
+    logging.info("Vaccination detailed data is cleaned!")
     clean_hosp_data()
-    print("Hospitalizations data is cleaned!")
-    print("Data cleaning is done!")
+    logging.info("Hospitalizations data is cleaned!")
+    logging.info("="*50)
+    logging.info("Data cleaning is done!")
+    logging.info("="*50)
