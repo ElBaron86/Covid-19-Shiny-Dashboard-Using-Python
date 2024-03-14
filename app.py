@@ -4,6 +4,11 @@
 import pandas as pd
 import numpy as np
 
+# Suppressing warnings
+import warnings
+warnings.filterwarnings("ignore")
+pd.options.mode.chained_assignment = None
+
 # Data visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -12,6 +17,10 @@ import plotly.tools as tls
 import plotly.graph_objects as go
 import plotly.express as px
 import json
+# For icons used
+from faicons import icon_svg as icons
+# My customed plots functions
+from scripts.customed_plots import repart, generate_subplot_figure, generate_choropleth_map
 
 # Dashboard modules
 from shiny.express import ui, input
@@ -19,9 +28,11 @@ from shinywidgets import render_plotly, render_widget
 from shiny import reactive, render, req
 from functools import partial
 from shiny.ui import page_navbar
-from faicons import icon_svg as icons
 
-# Loading prepared data
+## Loading prepared data ##
+# Geojson data
+regions = json.load(open("data/regions.geojson", "r"))
+departments = json.load(open("data/departements.geojson", "r"))
 # Hospitalisations data
 data_p1 = pd.read_csv("data/indicateur-suivi_cleaned.csv")
 
@@ -32,12 +43,14 @@ data_p2['jour'] = pd.to_datetime(data_p2['jour']).dt.date
 # Vaccination detailed data
 data_p3 = pd.read_csv("data/vaccination_detailed.csv", low_memory=False)
 data_p3['jour'] = pd.to_datetime(data_p3['jour']).dt.date
+data_p3 = data_p3[data_p3['clage_vacsi'] != 'Tous ages']
+locations = {dep : dep for dep in sorted(data_p3["nom_departement"].unique())}
 
-# Geojson data
-regions = json.load(open("data/regions.geojson", "r"))
-departments = json.load(open("data/departements.geojson", "r"))
+age_order = ['0-4', '5-9', '10-11','12-17', '18-24', '25-29', '30-39', '40-49', '50-59',
+            '60-64', '65-69', '70-74', '75-79', '80 et +']
 
-# Adding page title 
+# ------------------------------------------------- #
+# Page title 
 ui.page_opts(
     title="COVID 19 Dashoard - France",
     # Adding a navbar to the page
@@ -139,79 +152,17 @@ with ui.nav_panel(title="Hospital Situation", # Title
         @render_plotly
         def plot_hospitalisations():
 
-            plt.style.use("seaborn-v0_8")
-
             # Preparing data
+            data = data_p1_filtered()
             year = input.year_slider_p1()
-            data = data_p1[data_p1['year'] == year]
-
-            colors = ['orange' if 0.7 < to < 0.9 else 'red' if to > 0.9 else 'blue' for to in list(data['TO'])]
-            
-            # Subplot for tension rate & hospitalizations
-            fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
-                                subplot_titles=(f"Average tension rate per month in {year}", ""),
-                                row_heights=[0.2, 0.8], vertical_spacing=0.02)
-            # Bar plot for tension rate
-            fig.add_trace(go.Bar(
-                x=data['month'],
-                y=data['TO'],
-                marker=dict(color=colors),
-                name="Tension Rate"
-            ), row=1, col=1)
-            # New hospitalizations line plot
-            fig.add_trace(go.Scatter(
-                x=data['month'],
-                y=data['incid_hosp'],
-                mode='lines+markers',
-                name="New Hospitalizations",
-                line=dict(color='red'),
-                marker=dict(symbol='circle')
-            ), row=2, col=1)
-            # Reanimation line plot
-            fig.add_trace(go.Scatter(
-                x=data['month'],
-                y=data['incid_rea'],
-                mode='lines+markers',
-                name="In Reanimations",
-                line=dict(color='orange'),
-                marker=dict(symbol='square')
-            ), row=2, col=1)
-            # Returned home line plot
-            fig.add_trace(go.Scatter(
-                x=data['month'],
-                y=data['incid_rad'],
-                mode='lines+markers',
-                name="Returned Home",
-                line=dict(color='green'),
-                marker=dict(symbol='diamond')
-            ), row=2, col=1)
-            # Death line plot
-            fig.add_trace(go.Scatter(
-                x=data['month'],
-                y=data['incid_dchosp'],
-                mode='lines+markers',
-                name="Died in Hospital",
-                line=dict(color='dimgray'),
-                marker=dict(symbol='cross')
-            ), row=2, col=1)
-
-            # Show legend on the bottom subplot
-            fig.update_traces(showlegend=True, row=2, col=1)
-            # Update layout
-            fig.update_layout(
-                yaxis=dict(title="Tension rate", range=[0, 1.5]),
-                yaxis2=dict(title="Number of people", range=[0, 100000]),
-                xaxis2=dict(title="Month"),
-                height=600,
-                showlegend=False
-            )
+            # Creating the figure
+            fig = generate_subplot_figure(year, data)
 
             return fig
         
-    # About Me
+    # Text about Me
     ui.markdown("**About Me :**\n"
                 "I made this dashboard to practice my shiny visualization skills and to provide a tool for the public to understand the Covid-19 situation in France. I hope you find it useful. If you have any questions or suggestions, feel free to visit my [github](https://github.com/ElBaron86/Covid-19-Shiny-Dashboard-Using-Python.git).")
-
 
 # ------------------------------------------------- #
 ######## Vaccination Situation Panel ########
@@ -230,8 +181,6 @@ with ui.nav_panel(title="Vaccination Situation", # Title
 
     # Valueboxes Container
     with ui.layout_columns(fill=False):
-
-# TODO: Analye the data to verify the aggregation results. 
 
         # Total 1st dose valuebox
         with ui.value_box(showcase=icons("syringe"),
@@ -275,7 +224,6 @@ with ui.nav_panel(title="Vaccination Situation", # Title
     # Message nefore the map
     ui.markdown("The following graph...")
 
-# TODO: Analye the data to verify the aggregation results. Add a barplot with plotly for gender.
 # The barplot will be placed between the radio buttons and the map
     with ui.layout_columns(col_widths=(2, 2, 8),fill=False):
 
@@ -294,26 +242,14 @@ with ui.nav_panel(title="Vaccination Situation", # Title
 
             # data preparation
             data = data_p2_filtered()
-            data = data.groupby(by=[input.loc_type()]).agg({(input.radio_ndose()+'_'+input.loc_type()) : "max"}).reset_index()
-            if input.loc_type() == "dep":
-                loc = departments
-            else:
-                loc = regions
-            
-            fig = px.choropleth_mapbox(data, geojson = loc, locations = input.loc_type(), featureidkey = "properties.code",
-                                        color = (input.radio_ndose()+'_'+input.loc_type()), color_continuous_scale = "Viridis",
-                                        range_color = (data[ (input.radio_ndose()+'_'+input.loc_type()) ].min(), int(data[ (input.radio_ndose()+'_'+input.loc_type()) ].max())),
-                                        mapbox_style = "carto-positron",
-                                        zoom = 4, center = {"lat": 46.18680055591775, "lon": 2.547157538666192},
-                                        opacity = 0.5)
+            fig = generate_choropleth_map(input, data, departments, regions)
 
-            fig.update_layout(title=f"Vaccination by Region")
             return fig
 
 # ------------------------------------------------- #
 ######## Detailed Vaccination Situation Panel ########
 # ------------------------------------------------- #
-# TODO: Combine the data, add vaccines names, add a departments map, radio buttons for the type of vaccine, barplot for ages
+
 with ui.nav_panel(title="Detailed Vaccination", # Title
                     icon=icons("restroom"),
                     ):
@@ -329,7 +265,7 @@ with ui.nav_panel(title="Detailed Vaccination", # Title
         return data_p3[(data_p3['jour'] >= input.date_range_p3()[0]) & (data_p3['jour'] <= input.date_range_p3()[1])]
     
     # Container for genre_radio buttons, barplot and barchart
-    with ui.layout_columns(col_widths=(2, 5, 5), fill=False):
+    with ui.layout_columns(col_widths=(2, 2, 8), fill=False):
 
         # Radio button for the genre
         ui.input_radio_buttons(
@@ -337,11 +273,40 @@ with ui.nav_panel(title="Detailed Vaccination", # Title
             {"f" : "Female", "h" : "Male"},
         )
 
-        # Barplot for the age
-        @render_plotly
+        # Selector for departement
+        ui.input_selectize('dep_select', 'Select a department :',
+                            locations,
+                            )  
+
+        # Vaccination per age barplot
+        @render.plot
         def age_barplot():
 
             # Preparing data
             data = data_p3_filtered()
-            data = data.groupby(by=['clage_vacsi']).agg()
+            # Dividing according to the genre selected
+            H = data[['clage_vacsi', 'nom_departement'] + [c for c in data.columns if c.__contains__('_h') and c.__contains__('dep')]]
+            H = H[H['nom_departement'] == input.dep_select()]
+            H = (H[H['nom_departement'] == input.dep_select()]).groupby(['clage_vacsi', 'nom_departement']).max().reset_index()
+            F = data[['clage_vacsi', 'nom_departement'] + [c for c in data.columns if c.__contains__('_f') and c.__contains__('dep')]]
+            F = (F[F['nom_departement'] == input.dep_select()]).groupby(['clage_vacsi', 'nom_departement']).max().reset_index()
 
+            if input.genre_radio() == "f":
+                prepared = F
+                prepared['clage_vacsi'] = pd.Categorical(F['clage_vacsi'], categories=age_order, ordered=True)
+                prepared = prepared.sort_values(by='clage_vacsi')
+                prepared.to_csv("data/prepared.csv")
+
+                details = {age : vals for age, vals in zip(prepared['clage_vacsi'].values.tolist(), prepared[[c for c in prepared.columns if c.__contains__('cum')]].values.tolist())}
+                fig = repart(details)
+
+
+            else :
+                prepared = H
+                prepared['clage_vacsi'] = pd.Categorical(H['clage_vacsi'], categories=age_order, ordered=True)
+                prepared = prepared.sort_values(by='clage_vacsi')
+
+                details = {age : vals for age, vals in zip(prepared['clage_vacsi'].values.tolist(), prepared[[c for c in prepared.columns if c.__contains__('cum')]].values.tolist())}
+                fig = repart(details)
+
+            return fig
