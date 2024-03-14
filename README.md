@@ -11,7 +11,7 @@ The dashboard allows users to explore the following aspects of the pandemic:
 
 - Regional-level data: comparison and evolution of the indicators by region, department, or city, etc.
 
-The dashboard is interactive and allows users to filter, zoom, and customize the visualizations according to their preferences. It also provides links to the original data sources and additional information on the methodology and definitions used.
+The dashboard is interactive and allows users to filter and customize the visualizations according to their preferences. It also provides links to the original data sources and additional information on the methodology and definitions used.
 
 ## Implementation
 
@@ -36,7 +36,14 @@ You can install them using pip or conda, for example:
 pip install -r requirements.txt
 ```
 
-Then, you can clone this repository or download the zip file and extract it. In the project folder, you can run the following command to launch the app:
+Then, you can clone this repository or download the zip file and extract it.
+
+First, you need to run the data preparation script :
+
+```bash
+python ./scripts/data_cleaning.py
+```
+Once the "data\indicateur-suivi_cleaned.csv", "data\vaccination_detailed.csv" and "data\vaccination.csv" files have been generated, you can now start the application by executing the following command :
 
 ```bash
 shiny run app.py --reload --launch-browser
@@ -52,6 +59,8 @@ Here are some screenshots of the dashboard:
 
 ![Vaccination](https://github.com/ElBaron86/Covid-19-Shiny-Dashboard-Using-Python/blob/main/screenshots/vaccination.png)
 
+![Vaccination](https://github.com/ElBaron86/Covid-19-Shiny-Dashboard-Using-Python/blob/main/screenshots/detailed_vaccination.png)
+
 
 ## Sources
 
@@ -65,4 +74,4 @@ I would like to thank the following sources for providing the data and the inspi
 
 - [geojson files](https://france-geojson.gregoiredavid.fr/)
 
-
+**The list of specific files needed is detailed in SSI**
